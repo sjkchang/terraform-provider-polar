@@ -375,7 +375,7 @@ func mapMeterResponseToState(ctx context.Context, meter *components.Meter, data 
 	data.Filter = sdkFilterToModel(meter.Filter, diags)
 	data.Aggregation = sdkAggregationToModel(meter.Aggregation, diags)
 
-	data.Metadata = sdkMetadataToMap(ctx, meter.Metadata, func(v components.MeterMetadata) metadataFields {
+	data.Metadata = sdkMetadataToMap(ctx, meter.Metadata, func(v components.MetadataOutputType) metadataFields {
 		return metadataFields{Str: v.Str, Integer: v.Integer, Number: v.Number, Boolean: v.Boolean}
 	}, diags)
 }

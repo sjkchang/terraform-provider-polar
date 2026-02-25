@@ -389,7 +389,7 @@ func mapBenefitResponseToState(ctx context.Context, benefit *components.Benefit,
 		data.CustomProperties = &BenefitCustomPropertiesModel{
 			Note: optionalStringValue(b.Properties.Note),
 		}
-		data.Metadata = sdkMetadataToMap(ctx, b.Metadata, func(v components.BenefitCustomMetadata) metadataFields {
+		data.Metadata = sdkMetadataToMap(ctx, b.Metadata, func(v components.MetadataOutputType) metadataFields {
 			return metadataFields{Str: v.Str, Integer: v.Integer, Number: v.Number, Boolean: v.Boolean}
 		}, diags)
 
@@ -402,7 +402,7 @@ func mapBenefitResponseToState(ctx context.Context, benefit *components.Benefit,
 			KickMember: types.BoolValue(b.Properties.KickMember),
 			GuildID:    types.StringValue(b.Properties.GuildID),
 		}
-		data.Metadata = sdkMetadataToMap(ctx, b.Metadata, func(v components.BenefitDiscordMetadata) metadataFields {
+		data.Metadata = sdkMetadataToMap(ctx, b.Metadata, func(v components.MetadataOutputType) metadataFields {
 			return metadataFields{Str: v.Str, Integer: v.Integer, Number: v.Number, Boolean: v.Boolean}
 		}, diags)
 
@@ -414,7 +414,7 @@ func mapBenefitResponseToState(ctx context.Context, benefit *components.Benefit,
 			RepositoryName:  types.StringValue(b.Properties.RepositoryName),
 			Permission:      types.StringValue(string(b.Properties.Permission)),
 		}
-		data.Metadata = sdkMetadataToMap(ctx, b.Metadata, func(v components.BenefitGitHubRepositoryMetadata) metadataFields {
+		data.Metadata = sdkMetadataToMap(ctx, b.Metadata, func(v components.MetadataOutputType) metadataFields {
 			return metadataFields{Str: v.Str, Integer: v.Integer, Number: v.Number, Boolean: v.Boolean}
 		}, diags)
 
@@ -426,7 +426,7 @@ func mapBenefitResponseToState(ctx context.Context, benefit *components.Benefit,
 		data.DownloadablesProperties = &BenefitDownloadablesPropertiesModel{
 			Files: filesList,
 		}
-		data.Metadata = sdkMetadataToMap(ctx, b.Metadata, func(v components.BenefitDownloadablesMetadata) metadataFields {
+		data.Metadata = sdkMetadataToMap(ctx, b.Metadata, func(v components.MetadataOutputType) metadataFields {
 			return metadataFields{Str: v.Str, Integer: v.Integer, Number: v.Number, Boolean: v.Boolean}
 		}, diags)
 
@@ -434,7 +434,7 @@ func mapBenefitResponseToState(ctx context.Context, benefit *components.Benefit,
 		b := benefit.BenefitLicenseKeys
 		setBenefitCommonFields(b.ID, "license_keys", b.Description, data)
 		data.LicenseKeysProperties = sdkLicenseKeysPropsToModel(&b.Properties)
-		data.Metadata = sdkMetadataToMap(ctx, b.Metadata, func(v components.BenefitLicenseKeysMetadata) metadataFields {
+		data.Metadata = sdkMetadataToMap(ctx, b.Metadata, func(v components.MetadataOutputType) metadataFields {
 			return metadataFields{Str: v.Str, Integer: v.Integer, Number: v.Number, Boolean: v.Boolean}
 		}, diags)
 
@@ -446,7 +446,7 @@ func mapBenefitResponseToState(ctx context.Context, benefit *components.Benefit,
 			Units:    types.Int64Value(b.Properties.Units),
 			Rollover: types.BoolValue(b.Properties.Rollover),
 		}
-		data.Metadata = sdkMetadataToMap(ctx, b.Metadata, func(v components.BenefitMeterCreditMetadata) metadataFields {
+		data.Metadata = sdkMetadataToMap(ctx, b.Metadata, func(v components.MetadataOutputType) metadataFields {
 			return metadataFields{Str: v.Str, Integer: v.Integer, Number: v.Number, Boolean: v.Boolean}
 		}, diags)
 

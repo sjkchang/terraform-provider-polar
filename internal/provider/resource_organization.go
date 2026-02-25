@@ -28,9 +28,9 @@ func NewOrganizationResource() resource.Resource {
 }
 
 // OrganizationResource uses adopt-existing lifecycle: Create discovers the org
-// scoped to the access token and updates it (orgs can't be created via API).
-// Delete just removes from state (orgs can't be deleted). Needs the full
-// PolarProviderData (not just the SDK client) for supplemental HTTP calls.
+// scoped to the access token and updates it. Delete removes it from state.
+// The provider is scoped to a single org because access tokens are org-scoped;
+// users managing multiple orgs should use separate provider instances.
 type OrganizationResource struct {
 	provider *PolarProviderData
 }
@@ -316,19 +316,6 @@ func (r *OrganizationResource) Create(ctx context.Context, req resource.CreateRe
 
 	writeTime := latestTimestamp(updateResult.Organization)
 
-	// The SDK is missing fields in subscription_settings and customer_email_settings,
-	// so we use a raw HTTP PATCH to send complete payloads for these blocks.
-	if data.SubscriptionSettings != nil || data.CustomerEmailSettings != nil {
-		payload := buildSupplementalPayload(&data)
-		if err := patchOrgSupplemental(ctx, r.provider.ServerURL, r.provider.AccessToken, org.ID, payload); err != nil {
-			resp.Diagnostics.AddError(
-				"Error updating supplemental settings",
-				fmt.Sprintf("Could not update supplemental settings: %s", err),
-			)
-			return
-		}
-	}
-
 	// Eventual consistency poll.
 	consistent, err := pollForConsistency(ctx, "organization", org.ID, writeTime, func() (*components.Organization, error) {
 		result, err := r.provider.Client.Organizations.Get(ctx, org.ID)
@@ -349,15 +336,11 @@ func (r *OrganizationResource) Create(ctx context.Context, req resource.CreateRe
 		"id": consistent.ID,
 	})
 
-	// Map response to state. Supplemental HTTP GET reads fields the SDK omits.
-	// preserveURLFormatting avoids trailing-slash diffs.
 	mapOrganizationResponseToState(ctx, consistent, &data, &resp.Diagnostics)
-	resp.Diagnostics.Append(mapSupplementalSettings(ctx, r.provider.ServerURL, r.provider.AccessToken, consistent.ID, &data)...)
 	preserveURLFormatting(&data.Website, plannedWebsite)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-// Read: SDK GET + supplemental HTTP GET for fields the SDK omits.
 func (r *OrganizationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data OrganizationResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -377,12 +360,10 @@ func (r *OrganizationResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	mapOrganizationResponseToState(ctx, result.Organization, &data, &resp.Diagnostics)
-	resp.Diagnostics.Append(mapSupplementalSettings(ctx, r.provider.ServerURL, r.provider.AccessToken, data.ID.ValueString(), &data)...)
 	preserveURLFormatting(&data.Website, priorWebsite)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-// Update: SDK PATCH + supplemental raw HTTP for SDK gap fields → poll → save.
 func (r *OrganizationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data OrganizationResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
@@ -409,18 +390,6 @@ func (r *OrganizationResource) Update(ctx context.Context, req resource.UpdateRe
 
 	writeTime := latestTimestamp(updateResult.Organization)
 
-	// Raw HTTP PATCH for SDK gap fields (same pattern as Create).
-	if data.SubscriptionSettings != nil || data.CustomerEmailSettings != nil {
-		payload := buildSupplementalPayload(&data)
-		if err := patchOrgSupplemental(ctx, r.provider.ServerURL, r.provider.AccessToken, data.ID.ValueString(), payload); err != nil {
-			resp.Diagnostics.AddError(
-				"Error updating supplemental settings",
-				fmt.Sprintf("Could not update supplemental settings: %s", err),
-			)
-			return
-		}
-	}
-
 	// Eventual consistency poll.
 	consistent, err := pollForConsistency(ctx, "organization", data.ID.ValueString(), writeTime, func() (*components.Organization, error) {
 		result, err := r.provider.Client.Organizations.Get(ctx, data.ID.ValueString())
@@ -438,12 +407,11 @@ func (r *OrganizationResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	mapOrganizationResponseToState(ctx, consistent, &data, &resp.Diagnostics)
-	resp.Diagnostics.Append(mapSupplementalSettings(ctx, r.provider.ServerURL, r.provider.AccessToken, data.ID.ValueString(), &data)...)
 	preserveURLFormatting(&data.Website, plannedWebsite)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-// Delete is a no-op — orgs can't be deleted via API. We just drop from TF state.
+// Delete removes the organization from Terraform state without deleting it.
 func (r *OrganizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	tflog.Trace(ctx, "organization released from Terraform management")
 }

@@ -34,11 +34,8 @@ type PolarProviderModel struct {
 }
 
 // PolarProviderData is passed to every resource/datasource via Configure().
-// Wraps the SDK client plus raw credentials for supplemental HTTP calls (SDK gaps).
 type PolarProviderData struct {
-	Client      *polargo.Polar
-	AccessToken string // needed for raw HTTP calls that bypass the SDK
-	ServerURL   string // base URL for raw HTTP calls (e.g. "https://api.polar.sh")
+	Client *polargo.Polar
 
 	// Singleton guard: only one polar_organization resource per provider.
 	orgOnce sync.Once
@@ -156,18 +153,10 @@ func (p *PolarProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 	client := polargo.New(opts...)
 
-	// Base URL for raw HTTP calls that bypass the SDK.
-	serverURL := "https://sandbox-api.polar.sh"
-	if server == polargo.ServerProduction {
-		serverURL = "https://api.polar.sh"
-	}
-
 	// Package everything into PolarProviderData and hand it to Terraform.
 	// Resources receive this via resp.ResourceData, datasources via resp.DataSourceData.
 	providerData := &PolarProviderData{
-		Client:      client,
-		AccessToken: accessToken,
-		ServerURL:   serverURL,
+		Client: client,
 	}
 	resp.DataSourceData = providerData
 	resp.ResourceData = providerData

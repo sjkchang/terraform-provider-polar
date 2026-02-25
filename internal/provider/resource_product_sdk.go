@@ -160,7 +160,7 @@ func mapProductResponseToState(ctx context.Context, product *components.Product,
 	data.Prices = sdkPricesToModel(product.Prices, diags)
 
 	// Map metadata
-	data.Metadata = sdkMetadataToMap(ctx, product.Metadata, func(v components.ProductMetadata) metadataFields {
+	data.Metadata = sdkMetadataToMap(ctx, product.Metadata, func(v components.MetadataOutputType) metadataFields {
 		return metadataFields{Str: v.Str, Integer: v.Integer, Number: v.Number, Boolean: v.Boolean}
 	}, diags)
 
@@ -195,9 +195,9 @@ func mapProductResponseToState(ctx context.Context, product *components.Product,
 
 // --- Price conversion helpers ---
 
-func optionalCurrency(p PriceModel) *string {
+func optionalCurrency(p PriceModel) *components.PresentmentCurrency {
 	if !p.PriceCurrency.IsNull() && !p.PriceCurrency.IsUnknown() {
-		c := p.PriceCurrency.ValueString()
+		c := components.PresentmentCurrency(p.PriceCurrency.ValueString())
 		return &c
 	}
 	return nil
@@ -501,7 +501,7 @@ func sdkProductPriceToModel(price *components.ProductPrice) *PriceModel {
 	case price.ProductPriceCustom != nil:
 		pp := price.ProductPriceCustom
 		m := nullPriceModel("custom", types.StringValue(pp.PriceCurrency))
-		m.MinimumAmount = optionalInt64Value(pp.MinimumAmount)
+		m.MinimumAmount = types.Int64Value(pp.MinimumAmount)
 		m.MaximumAmount = optionalInt64Value(pp.MaximumAmount)
 		m.PresetAmount = optionalInt64Value(pp.PresetAmount)
 		return &m

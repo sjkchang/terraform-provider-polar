@@ -3,29 +3,14 @@
 package provider
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"math"
-	"net/http"
-	"net/url"
-	"strconv"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/polarsource/polar-go/models/components"
 )
-
-// supplementalHTTPClient is a dedicated client for raw HTTP calls that bypass the SDK.
-// Uses an explicit timeout to prevent indefinite hangs.
-var supplementalHTTPClient = &http.Client{
-	Timeout: 30 * time.Second,
-}
 
 // --- Discover the single organization scoped to the access token ---
 // Polar access tokens are org-scoped, so listing orgs should return exactly one.
@@ -47,7 +32,6 @@ func discoverOrganization(ctx context.Context, client *PolarProviderData) (*comp
 
 // --- Build SDK OrganizationUpdate from Terraform model ---
 // Only sets fields the user included in their config (non-null).
-// subscription_settings is excluded — it's handled via raw HTTP due to SDK gaps.
 
 func buildOrganizationUpdate(ctx context.Context, data *OrganizationResourceModel) (*components.OrganizationUpdate, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -102,7 +86,16 @@ func buildOrganizationUpdate(ctx context.Context, data *OrganizationResourceMode
 		update.FeatureSettings = fs
 	}
 
-	// Subscription settings: handled via raw HTTP (SDK missing prevent_trial_abuse field)
+	// Subscription settings
+	if data.SubscriptionSettings != nil {
+		update.SubscriptionSettings = &components.OrganizationSubscriptionSettings{
+			AllowMultipleSubscriptions:   data.SubscriptionSettings.AllowMultipleSubscriptions.ValueBool(),
+			AllowCustomerUpdates:         data.SubscriptionSettings.AllowCustomerUpdates.ValueBool(),
+			ProrationBehavior:            components.SubscriptionProrationBehavior(data.SubscriptionSettings.ProrationBehavior.ValueString()),
+			BenefitRevocationGracePeriod: data.SubscriptionSettings.BenefitRevocationGracePeriod.ValueInt64(),
+			PreventTrialAbuse:            data.SubscriptionSettings.PreventTrialAbuse.ValueBool(),
+		}
+	}
 
 	// Notification settings
 	if data.NotificationSettings != nil {
@@ -113,7 +106,20 @@ func buildOrganizationUpdate(ctx context.Context, data *OrganizationResourceMode
 		update.NotificationSettings = ns
 	}
 
-	// Customer email settings: handled via raw HTTP (SDK missing subscription_cycled_after_trial field)
+	// Customer email settings
+	if data.CustomerEmailSettings != nil {
+		update.CustomerEmailSettings = &components.OrganizationCustomerEmailSettings{
+			OrderConfirmation:            data.CustomerEmailSettings.OrderConfirmation.ValueBool(),
+			SubscriptionCancellation:     data.CustomerEmailSettings.SubscriptionCancellation.ValueBool(),
+			SubscriptionConfirmation:     data.CustomerEmailSettings.SubscriptionConfirmation.ValueBool(),
+			SubscriptionCycled:           data.CustomerEmailSettings.SubscriptionCycled.ValueBool(),
+			SubscriptionCycledAfterTrial: data.CustomerEmailSettings.SubscriptionCycledAfterTrial.ValueBool(),
+			SubscriptionPastDue:          data.CustomerEmailSettings.SubscriptionPastDue.ValueBool(),
+			SubscriptionRevoked:          data.CustomerEmailSettings.SubscriptionRevoked.ValueBool(),
+			SubscriptionUncanceled:       data.CustomerEmailSettings.SubscriptionUncanceled.ValueBool(),
+			SubscriptionUpdated:          data.CustomerEmailSettings.SubscriptionUpdated.ValueBool(),
+		}
+	}
 
 	return &update, diags
 }
@@ -164,8 +170,16 @@ func mapOrganizationResponseToState(ctx context.Context, org *components.Organiz
 		}
 	}
 
-	// Subscription settings: mapped via mapSupplementalSettings
-	// (SDK missing prevent_trial_abuse, entire block sent via raw HTTP)
+	if data.SubscriptionSettings != nil {
+		ss := org.SubscriptionSettings
+		data.SubscriptionSettings = &SubscriptionSettingsModel{
+			AllowMultipleSubscriptions:   types.BoolValue(ss.AllowMultipleSubscriptions),
+			AllowCustomerUpdates:         types.BoolValue(ss.AllowCustomerUpdates),
+			ProrationBehavior:            types.StringValue(string(ss.ProrationBehavior)),
+			BenefitRevocationGracePeriod: types.Int64Value(ss.BenefitRevocationGracePeriod),
+			PreventTrialAbuse:            types.BoolValue(ss.PreventTrialAbuse),
+		}
+	}
 
 	if data.NotificationSettings != nil {
 		data.NotificationSettings = &NotificationSettingsModel{
@@ -174,105 +188,8 @@ func mapOrganizationResponseToState(ctx context.Context, org *components.Organiz
 		}
 	}
 
-	// Customer email settings: mapped via mapSupplementalSettings
-	// (SDK missing subscription_cycled_after_trial field, same gap as subscription_settings)
-}
-
-// --- Raw HTTP for SDK gap workarounds ---
-// The Speakeasy-generated SDK omits certain fields:
-// - subscription_settings: missing `prevent_trial_abuse`
-// - customer_email_settings: missing `subscription_cycled_after_trial`
-// We bypass the SDK with raw HTTP PATCH/GET for these settings blocks.
-
-type subscriptionSettingsJSON struct {
-	AllowMultipleSubscriptions   bool   `json:"allow_multiple_subscriptions"`
-	AllowCustomerUpdates         bool   `json:"allow_customer_updates"`
-	ProrationBehavior            string `json:"proration_behavior"`
-	BenefitRevocationGracePeriod int64  `json:"benefit_revocation_grace_period"`
-	PreventTrialAbuse            bool   `json:"prevent_trial_abuse"`
-}
-
-type customerEmailSettingsJSON struct {
-	OrderConfirmation            bool `json:"order_confirmation"`
-	SubscriptionCancellation     bool `json:"subscription_cancellation"`
-	SubscriptionConfirmation     bool `json:"subscription_confirmation"`
-	SubscriptionCycled           bool `json:"subscription_cycled"`
-	SubscriptionCycledAfterTrial bool `json:"subscription_cycled_after_trial"`
-	SubscriptionPastDue          bool `json:"subscription_past_due"`
-	SubscriptionRevoked          bool `json:"subscription_revoked"`
-	SubscriptionUncanceled       bool `json:"subscription_uncanceled"`
-	SubscriptionUpdated          bool `json:"subscription_updated"`
-}
-
-// orgSupplementalUpdatePayload is the raw HTTP PATCH body for fields the SDK doesn't support.
-type orgSupplementalUpdatePayload struct {
-	SubscriptionSettings  *subscriptionSettingsJSON  `json:"subscription_settings,omitempty"`
-	CustomerEmailSettings *customerEmailSettingsJSON `json:"customer_email_settings,omitempty"`
-}
-
-// orgSupplementalGetResponse extracts settings from the org GET response.
-type orgSupplementalGetResponse struct {
-	SubscriptionSettings  *subscriptionSettingsJSON  `json:"subscription_settings"`
-	CustomerEmailSettings *customerEmailSettingsJSON `json:"customer_email_settings"`
-}
-
-// buildSupplementalPayload builds the raw HTTP payload for settings the SDK can't send.
-func buildSupplementalPayload(data *OrganizationResourceModel) *orgSupplementalUpdatePayload {
-	payload := &orgSupplementalUpdatePayload{}
-	if data.SubscriptionSettings != nil {
-		payload.SubscriptionSettings = &subscriptionSettingsJSON{
-			AllowMultipleSubscriptions:   data.SubscriptionSettings.AllowMultipleSubscriptions.ValueBool(),
-			AllowCustomerUpdates:         data.SubscriptionSettings.AllowCustomerUpdates.ValueBool(),
-			ProrationBehavior:            data.SubscriptionSettings.ProrationBehavior.ValueString(),
-			BenefitRevocationGracePeriod: data.SubscriptionSettings.BenefitRevocationGracePeriod.ValueInt64(),
-			PreventTrialAbuse:            data.SubscriptionSettings.PreventTrialAbuse.ValueBool(),
-		}
-	}
 	if data.CustomerEmailSettings != nil {
-		payload.CustomerEmailSettings = &customerEmailSettingsJSON{
-			OrderConfirmation:            data.CustomerEmailSettings.OrderConfirmation.ValueBool(),
-			SubscriptionCancellation:     data.CustomerEmailSettings.SubscriptionCancellation.ValueBool(),
-			SubscriptionConfirmation:     data.CustomerEmailSettings.SubscriptionConfirmation.ValueBool(),
-			SubscriptionCycled:           data.CustomerEmailSettings.SubscriptionCycled.ValueBool(),
-			SubscriptionCycledAfterTrial: data.CustomerEmailSettings.SubscriptionCycledAfterTrial.ValueBool(),
-			SubscriptionPastDue:          data.CustomerEmailSettings.SubscriptionPastDue.ValueBool(),
-			SubscriptionRevoked:          data.CustomerEmailSettings.SubscriptionRevoked.ValueBool(),
-			SubscriptionUncanceled:       data.CustomerEmailSettings.SubscriptionUncanceled.ValueBool(),
-			SubscriptionUpdated:          data.CustomerEmailSettings.SubscriptionUpdated.ValueBool(),
-		}
-	}
-	return payload
-}
-
-// mapSupplementalSettings reads fields the SDK omits from the API via raw HTTP
-// GET and updates state. Handles both subscription_settings and customer_email_settings.
-func mapSupplementalSettings(ctx context.Context, serverURL, token, orgID string, data *OrganizationResourceModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-	if data.SubscriptionSettings == nil && data.CustomerEmailSettings == nil {
-		return diags
-	}
-
-	supplemental, err := getOrgSupplemental(ctx, serverURL, token, orgID)
-	if err != nil {
-		diags.AddWarning(
-			"Could not read supplemental settings",
-			fmt.Sprintf("Failed to read supplemental settings via raw HTTP: %s. Values in state may be stale.", err),
-		)
-		return diags
-	}
-
-	if data.SubscriptionSettings != nil && supplemental.SubscriptionSettings != nil {
-		ss := supplemental.SubscriptionSettings
-		data.SubscriptionSettings = &SubscriptionSettingsModel{
-			AllowMultipleSubscriptions:   types.BoolValue(ss.AllowMultipleSubscriptions),
-			AllowCustomerUpdates:         types.BoolValue(ss.AllowCustomerUpdates),
-			ProrationBehavior:            types.StringValue(ss.ProrationBehavior),
-			BenefitRevocationGracePeriod: types.Int64Value(ss.BenefitRevocationGracePeriod),
-			PreventTrialAbuse:            types.BoolValue(ss.PreventTrialAbuse),
-		}
-	}
-	if data.CustomerEmailSettings != nil && supplemental.CustomerEmailSettings != nil {
-		ces := supplemental.CustomerEmailSettings
+		ces := org.CustomerEmailSettings
 		data.CustomerEmailSettings = &CustomerEmailSettingsModel{
 			OrderConfirmation:            types.BoolValue(ces.OrderConfirmation),
 			SubscriptionCancellation:     types.BoolValue(ces.SubscriptionCancellation),
@@ -285,142 +202,6 @@ func mapSupplementalSettings(ctx context.Context, serverURL, token, orgID string
 			SubscriptionUpdated:          types.BoolValue(ces.SubscriptionUpdated),
 		}
 	}
-	return diags
-}
-
-// patchOrgSupplemental sends a raw HTTP PATCH with retry for fields the SDK doesn't support.
-func patchOrgSupplemental(ctx context.Context, serverURL, token, orgID string, payload *orgSupplementalUpdatePayload) error {
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return fmt.Errorf("marshaling supplemental settings: %w", err)
-	}
-
-	return doWithRetry(ctx, func() (*http.Response, error) {
-		url := fmt.Sprintf("%s/v1/organizations/%s", serverURL, url.PathEscape(orgID))
-		req, err := http.NewRequestWithContext(ctx, http.MethodPatch, url, bytes.NewReader(body))
-		if err != nil {
-			return nil, fmt.Errorf("creating request: %w", err)
-		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", "Bearer "+token)
-		return supplementalHTTPClient.Do(req)
-	})
-}
-
-// getOrgSupplemental reads settings the SDK omits via raw HTTP GET with retry.
-func getOrgSupplemental(ctx context.Context, serverURL, token, orgID string) (*orgSupplementalGetResponse, error) {
-	var result orgSupplementalGetResponse
-
-	err := doWithRetry(ctx, func() (*http.Response, error) {
-		reqURL := fmt.Sprintf("%s/v1/organizations/%s", serverURL, url.PathEscape(orgID))
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
-		if err != nil {
-			return nil, fmt.Errorf("creating request: %w", err)
-		}
-		req.Header.Set("Authorization", "Bearer "+token)
-		resp, err := supplementalHTTPClient.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		// On success, decode and let doWithRetry handle body close
-		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			body, readErr := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			if readErr != nil {
-				return nil, fmt.Errorf("reading response body: %w", readErr)
-			}
-			if decodeErr := json.Unmarshal(body, &result); decodeErr != nil {
-				return nil, fmt.Errorf("decoding response: %w", decodeErr)
-			}
-			// Return nil response — body already consumed and closed
-			return nil, nil
-		}
-		return resp, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
-}
-
-// doWithRetry executes fn with exponential backoff on 429 (rate limit) and 5xx
-// (server errors). If fn returns (nil, nil), it means the caller already consumed
-// and closed the response body on success (see getOrgSupplemental).
-// Respects Retry-After headers when present on 429 responses.
-func doWithRetry(ctx context.Context, fn func() (*http.Response, error)) error {
-	const initialBackoff = 500 * time.Millisecond
-	const maxBackoff = 30 * time.Second
-	const maxElapsed = 120 * time.Second
-
-	start := time.Now()
-	for attempt := 0; ; attempt++ {
-		resp, err := fn()
-		if err != nil {
-			return err
-		}
-
-		// nil response means caller already handled a successful response
-		if resp == nil {
-			return nil
-		}
-
-		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			resp.Body.Close()
-			return nil
-		}
-
-		respBody, readErr := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if readErr != nil {
-			respBody = []byte("(failed to read response body)")
-		}
-
-		// Retry on 429 or 5xx if we haven't exceeded the max elapsed time.
-		if resp.StatusCode == 429 || resp.StatusCode >= 500 {
-			backoff := retryBackoff(resp, attempt, initialBackoff, maxBackoff)
-			if time.Since(start)+backoff <= maxElapsed {
-				tflog.Debug(ctx, "retrying supplemental HTTP request", map[string]interface{}{
-					"status":  resp.StatusCode,
-					"attempt": attempt + 1,
-					"backoff": backoff.String(),
-				})
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				case <-time.After(backoff):
-					continue
-				}
-			}
-		}
-
-		// Log full response body at debug level; return only status in user-facing error
-		// to avoid leaking internal API details.
-		tflog.Debug(ctx, "supplemental HTTP error response", map[string]interface{}{
-			"status": resp.StatusCode,
-			"body":   string(respBody),
-		})
-		return fmt.Errorf("supplemental HTTP request failed with status %d", resp.StatusCode)
-	}
-}
-
-// retryBackoff computes the backoff duration for a retry. If the response
-// includes a Retry-After header (seconds), that value is used (capped at
-// maxBackoff). Otherwise, exponential backoff is applied.
-func retryBackoff(resp *http.Response, attempt int, initialBackoff, maxBackoff time.Duration) time.Duration {
-	if ra := resp.Header.Get("Retry-After"); ra != "" {
-		if seconds, err := strconv.Atoi(ra); err == nil && seconds > 0 {
-			d := time.Duration(seconds) * time.Second
-			if d > maxBackoff {
-				d = maxBackoff
-			}
-			return d
-		}
-	}
-	backoff := time.Duration(float64(initialBackoff) * math.Pow(1.5, float64(attempt)))
-	if backoff > maxBackoff {
-		backoff = maxBackoff
-	}
-	return backoff
 }
 
 // --- Helpers ---
