@@ -65,9 +65,10 @@ jobs:
   test:
     name: 'Acceptance Tests: Terraform ${{ matrix.terraform }}'
     needs: build
-    if: ${{ secrets.POLAR_ACCESS_TOKEN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      POLAR_ACCESS_TOKEN: ${{ secrets.POLAR_ACCESS_TOKEN }}
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -77,18 +78,24 @@ jobs:
           - '1.13.*'
           - '1.14.*'
     steps:
+      - if: env.POLAR_ACCESS_TOKEN == ''
+        run: echo "::notice::Skipping acceptance tests — POLAR_ACCESS_TOKEN not available (e.g. Dependabot PR)" && exit 0
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        if: env.POLAR_ACCESS_TOKEN != ''
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        if: env.POLAR_ACCESS_TOKEN != ''
         with:
           go-version-file: 'go.mod'
           cache: true
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        if: env.POLAR_ACCESS_TOKEN != ''
         with:
           terraform_version: ${{ matrix.terraform }}
           terraform_wrapper: false
-      - run: go mod download
-      - env:
+      - if: env.POLAR_ACCESS_TOKEN != ''
+        run: go mod download
+      - if: env.POLAR_ACCESS_TOKEN != ''
+        env:
           TF_ACC: "1"
-          POLAR_ACCESS_TOKEN: ${{ secrets.POLAR_ACCESS_TOKEN }}
         run: go test -v -cover ./internal/provider/
         timeout-minutes: 10
