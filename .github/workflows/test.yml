@@ -60,10 +60,12 @@ jobs:
           git diff --compact-summary --exit-code || \
             (echo; echo "Unexpected difference in directories after code generation. Run 'make generate' command and commit."; exit 1)
 
-  # Run acceptance tests in a matrix with Terraform CLI versions
+  # Run acceptance tests in a matrix with Terraform CLI versions.
+  # Skipped when secrets are unavailable (e.g. Dependabot PRs).
   test:
     name: 'Acceptance Tests: Terraform ${{ matrix.terraform }}'
     needs: build
+    if: ${{ secrets.POLAR_ACCESS_TOKEN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
