@@ -37,7 +37,7 @@ provider "polar" {
 
 The provider includes the following resources, listed in typical order of use:
 
-- [`polar_organization`](resources/organization.md) — Adopt and configure organization settings (profile, subscriptions, notifications, feature flags). Automatically discovers the organization from the access token rather than creating one.
+- [`polar_organization`](resources/organization.md) — Adopt and configure organization settings (profile, subscriptions, notifications, feature flags).
 - [`polar_product`](resources/product.md) — Manage products with fixed, custom, free, or metered pricing.
 - [`polar_webhook_endpoint`](resources/webhook_endpoint.md) — Configure webhook endpoints for event notifications.
 - [`polar_benefit`](resources/benefit.md) — Define benefits (custom, meter credit, license keys, etc.) that can be attached to products.

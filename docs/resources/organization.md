@@ -3,16 +3,12 @@
 page_title: "polar_organization Resource - polar"
 subcategory: ""
 description: |-
-  Manages a Polar organization's settings. This resource does not create an organization — it automatically discovers the organization that owns the configured access token. The access token is scoped to a single organization — this resource adopts it on create and releases it from state on destroy. Only include the settings blocks you want Terraform to manage; omitted blocks are left untouched.
+  Manages a Polar organization's settings. The organization must already exist (created via the Polar UI). The access token is scoped to a single organization — this resource adopts it on create and releases it from state on destroy. Only include the settings blocks you want Terraform to manage; omitted blocks are left untouched.
 ---
 
 # polar_organization (Resource)
 
 Manages a Polar organization's settings. The organization must already exist (created via the Polar UI). The access token is scoped to a single organization — this resource adopts it on create and releases it from state on destroy. Only include the settings blocks you want Terraform to manage; omitted blocks are left untouched.
-
-~> **Adopt-existing lifecycle.** This resource does not create an organization — it automatically discovers the organization that owns the configured access token and brings it under Terraform management. On destroy, the organization is only removed from state; nothing is deleted on the Polar side.
-
-~> **Access token determines the organization.** Because the organization is discovered from the access token, switching to a token for a different organization will cause Terraform to see a full replacement: the old organization's settings leave state and the new organization is adopted. All other resources (products, meters, benefits, webhooks) are also scoped to the token's organization, so changing tokens effectively changes the entire managed scope. This is an inherent constraint of the Polar API, where all operations are scoped to the token's organization.
 
 ## Example Usage
 
