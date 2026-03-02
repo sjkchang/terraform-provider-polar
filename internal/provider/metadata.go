@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/polarsource/polar-go/models/components"
 )
 
 // --- Metadata conversion ---
@@ -67,6 +68,12 @@ func sdkMetadataToMap[T any](ctx context.Context, metadata map[string]T, extract
 	result, d := types.MapValueFrom(ctx, types.StringType, stringMap)
 	diags.Append(d...)
 	return result
+}
+
+// extractMetadataOutput is the standard extractor for MetadataOutputType used
+// across resources that return metadata in API responses.
+func extractMetadataOutput(v components.MetadataOutputType) metadataFields {
+	return metadataFields{Str: v.Str, Integer: v.Integer, Number: v.Number, Boolean: v.Boolean}
 }
 
 // validateMetadata checks plan-phase constraints for metadata fields:

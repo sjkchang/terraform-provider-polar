@@ -111,6 +111,29 @@ func optionalInt64Value(i *int64) types.Int64 {
 	return types.Int64Value(*i)
 }
 
+// parseOptionalTime parses an RFC3339 timestamp from a types.String, returning
+// nil if the value is null or unknown.
+func parseOptionalTime(s types.String, diags *diag.Diagnostics) *time.Time {
+	if s.IsNull() || s.IsUnknown() {
+		return nil
+	}
+	t, err := time.Parse(time.RFC3339, s.ValueString())
+	if err != nil {
+		diags.AddError("Invalid timestamp", "Could not parse timestamp: "+err.Error())
+		return nil
+	}
+	return &t
+}
+
+// optionalBoolValue safely converts a *bool to types.Bool,
+// returning types.BoolNull() if the pointer is nil.
+func optionalBoolValue(b *bool) types.Bool {
+	if b == nil {
+		return types.BoolNull()
+	}
+	return types.BoolValue(*b)
+}
+
 // derefBool safely dereferences a *bool, returning false if nil.
 func derefBool(b *bool) bool {
 	if b == nil {

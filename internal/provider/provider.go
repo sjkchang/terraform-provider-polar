@@ -171,6 +171,9 @@ func (p *PolarProvider) Resources(ctx context.Context) []func() resource.Resourc
 		NewBenefitResource,
 		NewProductResource,
 		NewOrganizationResource,
+		NewDiscountResource,
+		NewCheckoutLinkResource,
+		NewCustomFieldResource,
 	}
 }
 
