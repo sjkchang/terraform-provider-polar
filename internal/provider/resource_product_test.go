@@ -416,3 +416,75 @@ resource "polar_product" "test" {
 }
 `, name)
 }
+
+func TestAccProductResource_seatBased(t *testing.T) {
+	rName := fmt.Sprintf("tf-acc-%s", acctest.RandStringFromCharSet(8, acctest.CharSetAlphaNum))
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create recurring monthly product with seat-based pricing (2 tiers)
+			{
+				Config: testAccProductSeatBasedConfig(rName, 1000, 800),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(
+						"polar_product.test",
+						tfjsonpath.New("name"),
+						knownvalue.StringExact(rName),
+					),
+					statecheck.ExpectKnownValue(
+						"polar_product.test",
+						tfjsonpath.New("prices").AtSliceIndex(0).AtMapKey("amount_type"),
+						knownvalue.StringExact("seat_based"),
+					),
+					statecheck.ExpectKnownValue(
+						"polar_product.test",
+						tfjsonpath.New("prices").AtSliceIndex(0).AtMapKey("seat_tiers"),
+						knownvalue.ListSizeExact(2),
+					),
+				},
+			},
+			// ImportState
+			{
+				ResourceName:      "polar_product.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Update tier pricing
+			{
+				Config: testAccProductSeatBasedConfig(rName, 1200, 900),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(
+						"polar_product.test",
+						tfjsonpath.New("prices").AtSliceIndex(0).AtMapKey("seat_tiers"),
+						knownvalue.ListSizeExact(2),
+					),
+				},
+			},
+		},
+	})
+}
+
+func testAccProductSeatBasedConfig(name string, tier1Price, tier2Price int64) string {
+	return fmt.Sprintf(`
+resource "polar_product" "test" {
+  name               = %q
+  recurring_interval = "month"
+
+  prices = [{
+    amount_type = "seat_based"
+    seat_tiers = [
+      {
+        min_seats      = 1
+        max_seats      = 10
+        price_per_seat = %d
+      },
+      {
+        min_seats      = 11
+        price_per_seat = %d
+      },
+    ]
+  }]
+}
+`, name, tier1Price, tier2Price)
+}

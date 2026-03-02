@@ -72,6 +72,14 @@ type PriceModel struct {
 	MeterID    types.String `tfsdk:"meter_id"`
 	UnitAmount types.String `tfsdk:"unit_amount"`
 	CapAmount  types.Int64  `tfsdk:"cap_amount"`
+	// Seat-based
+	SeatTiers []SeatTierModel `tfsdk:"seat_tiers"`
+}
+
+type SeatTierModel struct {
+	MinSeats     types.Int64 `tfsdk:"min_seats"`
+	MaxSeats     types.Int64 `tfsdk:"max_seats"`
+	PricePerSeat types.Int64 `tfsdk:"price_per_seat"`
 }
 
 // --- Resource interface ---
@@ -129,10 +137,10 @@ func (r *ProductResource) Schema(ctx context.Context, req resource.SchemaRequest
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"amount_type": schema.StringAttribute{
-							MarkdownDescription: "The price type. Must be one of: `fixed`, `free`, `custom`, `metered_unit`.",
+							MarkdownDescription: "The price type. Must be one of: `fixed`, `free`, `custom`, `metered_unit`, `seat_based`.",
 							Required:            true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("fixed", "free", "custom", "metered_unit"),
+								stringvalidator.OneOf("fixed", "free", "custom", "metered_unit", "seat_based"),
 							},
 						},
 						"price_currency": schema.StringAttribute{
@@ -173,6 +181,27 @@ func (r *ProductResource) Schema(ctx context.Context, req resource.SchemaRequest
 						"cap_amount": schema.Int64Attribute{
 							MarkdownDescription: "Maximum amount in cents that can be charged regardless of units consumed. For `metered_unit` type.",
 							Optional:            true,
+						},
+						// Seat-based
+						"seat_tiers": schema.ListNestedAttribute{
+							MarkdownDescription: "List of seat-based pricing tiers. Required when `amount_type` is `seat_based`. Tiers must be ordered by `min_seats` ascending with no gaps, and only the last tier may omit `max_seats`.",
+							Optional:            true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"min_seats": schema.Int64Attribute{
+										MarkdownDescription: "Minimum number of seats (inclusive) for this tier.",
+										Required:            true,
+									},
+									"max_seats": schema.Int64Attribute{
+										MarkdownDescription: "Maximum number of seats (inclusive) for this tier. Omit on the last tier for unlimited.",
+										Optional:            true,
+									},
+									"price_per_seat": schema.Int64Attribute{
+										MarkdownDescription: "Price per seat in cents for this tier.",
+										Required:            true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -285,6 +314,47 @@ func (r *ProductResource) ValidateConfig(ctx context.Context, req resource.Valid
 					"unit_amount is required when amount_type is \"metered_unit\".",
 				)
 			}
+		case "seat_based":
+			if len(price.SeatTiers) == 0 {
+				resp.Diagnostics.AddAttributeError(
+					pricePath.AtName("seat_tiers"),
+					"Missing required field",
+					"seat_tiers must contain at least one tier when amount_type is \"seat_based\".",
+				)
+			} else {
+				for j, tier := range price.SeatTiers {
+					tierPath := pricePath.AtName("seat_tiers").AtListIndex(j)
+					if tier.MinSeats.ValueInt64() < 1 {
+						resp.Diagnostics.AddAttributeError(
+							tierPath.AtName("min_seats"),
+							"Invalid tier",
+							"min_seats must be at least 1.",
+						)
+					}
+					// Only the last tier may omit max_seats.
+					if j < len(price.SeatTiers)-1 && tier.MaxSeats.IsNull() {
+						resp.Diagnostics.AddAttributeError(
+							tierPath.AtName("max_seats"),
+							"Invalid tier",
+							"Only the last tier may omit max_seats (unlimited).",
+						)
+					}
+					// Tiers must be contiguous: tier[j].min_seats == tier[j-1].max_seats + 1
+					if j > 0 {
+						prev := price.SeatTiers[j-1]
+						if !prev.MaxSeats.IsNull() {
+							expectedMin := prev.MaxSeats.ValueInt64() + 1
+							if tier.MinSeats.ValueInt64() != expectedMin {
+								resp.Diagnostics.AddAttributeError(
+									tierPath.AtName("min_seats"),
+									"Gap in tiers",
+									fmt.Sprintf("min_seats must be %d (previous tier max_seats + 1).", expectedMin),
+								)
+							}
+						}
+					}
+				}
+			}
 		}
 
 		// --- Conflicting fields: reject fields that don't belong to this type ---
@@ -335,6 +405,13 @@ func (r *ProductResource) ValidateConfig(ctx context.Context, req resource.Valid
 					fmt.Sprintf("cap_amount is not used when amount_type is %q.", amountType),
 				)
 			}
+		}
+		if amountType != "seat_based" && len(price.SeatTiers) > 0 {
+			resp.Diagnostics.AddAttributeError(
+				pricePath.AtName("seat_tiers"),
+				"Unexpected field",
+				fmt.Sprintf("seat_tiers is not used when amount_type is %q.", amountType),
+			)
 		}
 
 		// --- Logical constraints for custom prices ---
