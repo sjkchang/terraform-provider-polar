@@ -37,20 +37,20 @@ type CheckoutLinkResource struct {
 
 // CheckoutLinkResourceModel is the Terraform state shape for polar_checkout_link.
 type CheckoutLinkResourceModel struct {
-	ID                   types.String `tfsdk:"id"`
-	ProductIDs           types.Set    `tfsdk:"product_ids"`
-	Label                types.String `tfsdk:"label"`
-	AllowDiscountCodes   types.Bool   `tfsdk:"allow_discount_codes"`
-	RequireBillingAddress types.Bool  `tfsdk:"require_billing_address"`
-	DiscountID           types.String `tfsdk:"discount_id"`
-	SuccessURL           types.String `tfsdk:"success_url"`
-	ReturnURL            types.String `tfsdk:"return_url"`
-	TrialInterval        types.String `tfsdk:"trial_interval"`
-	TrialIntervalCount   types.Int64  `tfsdk:"trial_interval_count"`
-	Metadata             types.Map    `tfsdk:"metadata"`
-	PaymentProcessor     types.String `tfsdk:"payment_processor"`
-	ClientSecret         types.String `tfsdk:"client_secret"`
-	URL                  types.String `tfsdk:"url"`
+	ID                    types.String `tfsdk:"id"`
+	ProductIDs            types.Set    `tfsdk:"product_ids"`
+	Label                 types.String `tfsdk:"label"`
+	AllowDiscountCodes    types.Bool   `tfsdk:"allow_discount_codes"`
+	RequireBillingAddress types.Bool   `tfsdk:"require_billing_address"`
+	DiscountID            types.String `tfsdk:"discount_id"`
+	SuccessURL            types.String `tfsdk:"success_url"`
+	ReturnURL             types.String `tfsdk:"return_url"`
+	TrialInterval         types.String `tfsdk:"trial_interval"`
+	TrialIntervalCount    types.Int64  `tfsdk:"trial_interval_count"`
+	Metadata              types.Map    `tfsdk:"metadata"`
+	PaymentProcessor      types.String `tfsdk:"payment_processor"`
+	ClientSecret          types.String `tfsdk:"client_secret"`
+	URL                   types.String `tfsdk:"url"`
 }
 
 func (r *CheckoutLinkResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
