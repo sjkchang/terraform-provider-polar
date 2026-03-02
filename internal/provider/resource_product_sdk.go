@@ -52,6 +52,15 @@ func buildProductCreateRequest(ctx context.Context, data *ProductResourceModel) 
 			Medias:            medias,
 		}
 
+		if !data.TrialInterval.IsNull() {
+			ti := components.TrialInterval(data.TrialInterval.ValueString())
+			recurring.TrialInterval = &ti
+		}
+		if !data.TrialIntervalCount.IsNull() {
+			tic := data.TrialIntervalCount.ValueInt64()
+			recurring.TrialIntervalCount = &tic
+		}
+
 		if !data.Metadata.IsNull() && !data.Metadata.IsUnknown() {
 			m, d := metadataToCreateSDK(ctx, data.Metadata, components.CreateProductCreateRecurringMetadataStr)
 			diags.Append(d...)
@@ -135,6 +144,15 @@ func buildProductUpdateRequest(ctx context.Context, data *ProductResourceModel, 
 		update.Medias = medias
 	}
 
+	if !data.TrialInterval.IsNull() {
+		ti := components.TrialInterval(data.TrialInterval.ValueString())
+		update.TrialInterval = &ti
+	}
+	if !data.TrialIntervalCount.IsNull() {
+		tic := data.TrialIntervalCount.ValueInt64()
+		update.TrialIntervalCount = &tic
+	}
+
 	isArchived := data.IsArchived.ValueBool()
 	update.IsArchived = &isArchived
 
@@ -155,6 +173,13 @@ func mapProductResponseToState(ctx context.Context, product *components.Product,
 	} else {
 		data.RecurringInterval = types.StringNull()
 	}
+
+	if product.TrialInterval != nil {
+		data.TrialInterval = types.StringValue(string(*product.TrialInterval))
+	} else {
+		data.TrialInterval = types.StringNull()
+	}
+	data.TrialIntervalCount = optionalInt64Value(product.TrialIntervalCount)
 
 	// Map prices
 	data.Prices = sdkPricesToModel(product.Prices, diags)

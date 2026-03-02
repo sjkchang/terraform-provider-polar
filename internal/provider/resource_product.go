@@ -42,8 +42,10 @@ type ProductResourceModel struct {
 	ID                types.String `tfsdk:"id"`
 	Name              types.String `tfsdk:"name"`
 	Description       types.String `tfsdk:"description"`
-	RecurringInterval types.String `tfsdk:"recurring_interval"`
-	Prices            []PriceModel `tfsdk:"prices"`
+	RecurringInterval  types.String `tfsdk:"recurring_interval"`
+	TrialInterval      types.String `tfsdk:"trial_interval"`
+	TrialIntervalCount types.Int64  `tfsdk:"trial_interval_count"`
+	Prices             []PriceModel `tfsdk:"prices"`
 	BenefitIDs        types.Set    `tfsdk:"benefit_ids"`
 	Metadata          types.Map    `tfsdk:"metadata"`
 	Medias            types.List   `tfsdk:"medias"`
@@ -109,6 +111,17 @@ func (r *ProductResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Validators: []validator.String{
 					stringvalidator.OneOf("month", "year", "week", "day"),
 				},
+			},
+			"trial_interval": schema.StringAttribute{
+				MarkdownDescription: "The interval unit for the trial period. Must be `day`, `week`, `month`, or `year`. Only applicable to recurring products.",
+				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("day", "week", "month", "year"),
+				},
+			},
+			"trial_interval_count": schema.Int64Attribute{
+				MarkdownDescription: "The number of interval units for the trial period. Only applicable to recurring products.",
+				Optional:            true,
 			},
 			"prices": schema.ListNestedAttribute{
 				MarkdownDescription: "List of prices for this product. At least one price is required. Each price uses `amount_type` to determine which fields apply.",
@@ -199,6 +212,24 @@ func (r *ProductResource) ValidateConfig(ctx context.Context, req resource.Valid
 	}
 
 	validateMetadata(ctx, data.Metadata, &resp.Diagnostics)
+
+	// Trial fields must be set together or not at all.
+	trialIntervalSet := !data.TrialInterval.IsNull() && !data.TrialInterval.IsUnknown()
+	trialCountSet := !data.TrialIntervalCount.IsNull() && !data.TrialIntervalCount.IsUnknown()
+	if trialIntervalSet != trialCountSet {
+		resp.Diagnostics.AddError(
+			"Incomplete trial configuration",
+			"`trial_interval` and `trial_interval_count` must both be set or both be omitted.",
+		)
+	}
+
+	// Trials are only valid for recurring products.
+	if (trialIntervalSet || trialCountSet) && !data.RecurringInterval.IsUnknown() && data.RecurringInterval.IsNull() {
+		resp.Diagnostics.AddError(
+			"Trial not supported for one-time products",
+			"`trial_interval` and `trial_interval_count` can only be set on recurring products (set `recurring_interval`).",
+		)
+	}
 
 	for i, price := range data.Prices {
 		if price.AmountType.IsUnknown() {
