@@ -360,4 +360,3 @@ func setDiscountCommonOptionals(code *string, startsAt, endsAt *time.Time, maxRe
 	}
 	data.MaxRedemptions = optionalInt64Value(maxRedemptions)
 }
-

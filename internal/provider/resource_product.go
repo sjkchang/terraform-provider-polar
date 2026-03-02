@@ -39,17 +39,17 @@ type ProductResource struct {
 // Products have polymorphic prices (fixed/free/custom/metered_unit) and can
 // be either one-time or recurring (determined by recurring_interval).
 type ProductResourceModel struct {
-	ID                types.String `tfsdk:"id"`
-	Name              types.String `tfsdk:"name"`
-	Description       types.String `tfsdk:"description"`
+	ID                 types.String `tfsdk:"id"`
+	Name               types.String `tfsdk:"name"`
+	Description        types.String `tfsdk:"description"`
 	RecurringInterval  types.String `tfsdk:"recurring_interval"`
 	TrialInterval      types.String `tfsdk:"trial_interval"`
 	TrialIntervalCount types.Int64  `tfsdk:"trial_interval_count"`
 	Prices             []PriceModel `tfsdk:"prices"`
-	BenefitIDs        types.Set    `tfsdk:"benefit_ids"`
-	Metadata          types.Map    `tfsdk:"metadata"`
-	Medias            types.List   `tfsdk:"medias"`
-	IsArchived        types.Bool   `tfsdk:"is_archived"`
+	BenefitIDs         types.Set    `tfsdk:"benefit_ids"`
+	Metadata           types.Map    `tfsdk:"metadata"`
+	Medias             types.List   `tfsdk:"medias"`
+	IsArchived         types.Bool   `tfsdk:"is_archived"`
 }
 
 // PriceModel is a flat struct that covers all price types. The `amount_type`

@@ -33,26 +33,26 @@ type CustomFieldResource struct {
 
 // CustomFieldResourceModel is the Terraform state shape for polar_custom_field.
 type CustomFieldResourceModel struct {
-	ID         types.String              `tfsdk:"id"`
-	Type       types.String              `tfsdk:"type"`
-	Slug       types.String              `tfsdk:"slug"`
-	Name       types.String              `tfsdk:"name"`
-	Metadata   types.Map                 `tfsdk:"metadata"`
+	ID         types.String                `tfsdk:"id"`
+	Type       types.String                `tfsdk:"type"`
+	Slug       types.String                `tfsdk:"slug"`
+	Name       types.String                `tfsdk:"name"`
+	Metadata   types.Map                   `tfsdk:"metadata"`
 	Properties *CustomFieldPropertiesModel `tfsdk:"properties"`
 }
 
 // CustomFieldPropertiesModel is a unified properties block for all custom field types.
 // Fields that don't apply to the current type are simply null.
 type CustomFieldPropertiesModel struct {
-	FormLabel       types.String               `tfsdk:"form_label"`
-	FormHelpText    types.String               `tfsdk:"form_help_text"`
-	FormPlaceholder types.String               `tfsdk:"form_placeholder"`
-	Textarea        types.Bool                 `tfsdk:"textarea"`
-	MinLength       types.Int64                `tfsdk:"min_length"`
-	MaxLength       types.Int64                `tfsdk:"max_length"`
-	Ge              types.Int64                `tfsdk:"ge"`
-	Le              types.Int64                `tfsdk:"le"`
-	Options         []CustomFieldOptionModel   `tfsdk:"options"`
+	FormLabel       types.String             `tfsdk:"form_label"`
+	FormHelpText    types.String             `tfsdk:"form_help_text"`
+	FormPlaceholder types.String             `tfsdk:"form_placeholder"`
+	Textarea        types.Bool               `tfsdk:"textarea"`
+	MinLength       types.Int64              `tfsdk:"min_length"`
+	MaxLength       types.Int64              `tfsdk:"max_length"`
+	Ge              types.Int64              `tfsdk:"ge"`
+	Le              types.Int64              `tfsdk:"le"`
+	Options         []CustomFieldOptionModel `tfsdk:"options"`
 }
 
 type CustomFieldOptionModel struct {

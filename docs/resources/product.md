@@ -110,6 +110,8 @@ resource "polar_product" "pro_with_benefits" {
 - `medias` (List of String) List of media file IDs attached to the product.
 - `metadata` (Map of String) Key-value metadata.
 - `recurring_interval` (String) The billing interval for recurring products. Must be one of: `month`, `year`, `week`, `day`. Omit for one-time products. Changing this forces a new resource (the existing product is archived, not deleted).
+- `trial_interval` (String) The interval unit for the trial period. Must be `day`, `week`, `month`, or `year`. Only applicable to recurring products.
+- `trial_interval_count` (Number) The number of interval units for the trial period. Only applicable to recurring products.
 
 ### Read-Only
 
