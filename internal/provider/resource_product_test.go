@@ -467,7 +467,14 @@ func TestAccProductResource_seatBased(t *testing.T) {
 
 func testAccProductSeatBasedConfig(name string, tier1Price, tier2Price int64) string {
 	return fmt.Sprintf(`
+resource "polar_organization" "test" {
+  feature_settings = {
+    seat_based_pricing_enabled = true
+  }
+}
+
 resource "polar_product" "test" {
+  depends_on         = [polar_organization.test]
   name               = %q
   recurring_interval = "month"
 

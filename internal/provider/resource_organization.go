@@ -152,109 +152,129 @@ func (r *OrganizationResource) Schema(ctx context.Context, req resource.SchemaRe
 				},
 			},
 			"feature_settings": schema.SingleNestedAttribute{
-				MarkdownDescription: "Feature flags for the organization. Omit to leave feature settings unmanaged.",
+				MarkdownDescription: "Feature flags for the organization. Omit to leave feature settings unmanaged. Only specified fields are updated; omitted fields keep their current values.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"issue_funding_enabled": schema.BoolAttribute{
 						MarkdownDescription: "Whether issue funding is enabled.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"seat_based_pricing_enabled": schema.BoolAttribute{
 						MarkdownDescription: "Whether seat-based pricing is enabled.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"revops_enabled": schema.BoolAttribute{
 						MarkdownDescription: "Whether RevOps features are enabled.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"wallets_enabled": schema.BoolAttribute{
 						MarkdownDescription: "Whether wallets are enabled.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 				},
 			},
 			"subscription_settings": schema.SingleNestedAttribute{
-				MarkdownDescription: "Subscription behavior settings. Omit to leave subscription settings unmanaged.",
+				MarkdownDescription: "Subscription behavior settings. Omit to leave subscription settings unmanaged. Only specified fields are updated; omitted fields keep their current values.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"allow_multiple_subscriptions": schema.BoolAttribute{
 						MarkdownDescription: "Whether customers can hold multiple active subscriptions.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"allow_customer_updates": schema.BoolAttribute{
 						MarkdownDescription: "Whether customers can self-manage their subscriptions.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"proration_behavior": schema.StringAttribute{
 						MarkdownDescription: "How mid-cycle subscription changes are billed. Must be `invoice` or `prorate`.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("invoice", "prorate"),
 						},
 					},
 					"benefit_revocation_grace_period": schema.Int64Attribute{
 						MarkdownDescription: "Number of days before benefits are revoked after subscription cancellation.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"prevent_trial_abuse": schema.BoolAttribute{
 						MarkdownDescription: "Whether to prevent trial abuse by restricting repeat trials.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 				},
 			},
 			"notification_settings": schema.SingleNestedAttribute{
-				MarkdownDescription: "Email notification preferences for the organization. Omit to leave notification settings unmanaged.",
+				MarkdownDescription: "Email notification preferences for the organization. Omit to leave notification settings unmanaged. Only specified fields are updated; omitted fields keep their current values.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"new_order": schema.BoolAttribute{
 						MarkdownDescription: "Whether to send notifications for new orders.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"new_subscription": schema.BoolAttribute{
 						MarkdownDescription: "Whether to send notifications for new subscriptions.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 				},
 			},
 			"customer_email_settings": schema.SingleNestedAttribute{
-				MarkdownDescription: "Controls which transactional emails are sent to customers. Omit to leave customer email settings unmanaged.",
+				MarkdownDescription: "Controls which transactional emails are sent to customers. Omit to leave customer email settings unmanaged. Only specified fields are updated; omitted fields keep their current values.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"order_confirmation": schema.BoolAttribute{
 						MarkdownDescription: "Whether to send order confirmation emails.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"subscription_cancellation": schema.BoolAttribute{
 						MarkdownDescription: "Whether to send subscription cancellation emails.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"subscription_confirmation": schema.BoolAttribute{
 						MarkdownDescription: "Whether to send subscription confirmation emails.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"subscription_cycled": schema.BoolAttribute{
 						MarkdownDescription: "Whether to send subscription renewal emails.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"subscription_cycled_after_trial": schema.BoolAttribute{
 						MarkdownDescription: "Whether to send subscription renewal emails after a trial period ends.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"subscription_past_due": schema.BoolAttribute{
 						MarkdownDescription: "Whether to send subscription past-due emails.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"subscription_revoked": schema.BoolAttribute{
 						MarkdownDescription: "Whether to send subscription revoked emails.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"subscription_uncanceled": schema.BoolAttribute{
 						MarkdownDescription: "Whether to send subscription uncanceled emails.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 					"subscription_updated": schema.BoolAttribute{
 						MarkdownDescription: "Whether to send subscription updated emails.",
-						Required:            true,
+						Optional:            true,
+						Computed:            true,
 					},
 				},
 			},

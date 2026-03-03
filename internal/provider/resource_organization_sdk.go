@@ -75,14 +75,22 @@ func buildOrganizationUpdate(ctx context.Context, data *OrganizationResourceMode
 	// Feature settings
 	if data.FeatureSettings != nil {
 		fs := &components.OrganizationFeatureSettings{}
-		b := data.FeatureSettings.IssueFundingEnabled.ValueBool()
-		fs.IssueFundingEnabled = &b
-		b2 := data.FeatureSettings.SeatBasedPricingEnabled.ValueBool()
-		fs.SeatBasedPricingEnabled = &b2
-		b3 := data.FeatureSettings.RevopsEnabled.ValueBool()
-		fs.RevopsEnabled = &b3
-		b4 := data.FeatureSettings.WalletsEnabled.ValueBool()
-		fs.WalletsEnabled = &b4
+		if !data.FeatureSettings.IssueFundingEnabled.IsNull() && !data.FeatureSettings.IssueFundingEnabled.IsUnknown() {
+			b := data.FeatureSettings.IssueFundingEnabled.ValueBool()
+			fs.IssueFundingEnabled = &b
+		}
+		if !data.FeatureSettings.SeatBasedPricingEnabled.IsNull() && !data.FeatureSettings.SeatBasedPricingEnabled.IsUnknown() {
+			b := data.FeatureSettings.SeatBasedPricingEnabled.ValueBool()
+			fs.SeatBasedPricingEnabled = &b
+		}
+		if !data.FeatureSettings.RevopsEnabled.IsNull() && !data.FeatureSettings.RevopsEnabled.IsUnknown() {
+			b := data.FeatureSettings.RevopsEnabled.ValueBool()
+			fs.RevopsEnabled = &b
+		}
+		if !data.FeatureSettings.WalletsEnabled.IsNull() && !data.FeatureSettings.WalletsEnabled.IsUnknown() {
+			b := data.FeatureSettings.WalletsEnabled.ValueBool()
+			fs.WalletsEnabled = &b
+		}
 		update.FeatureSettings = fs
 	}
 
