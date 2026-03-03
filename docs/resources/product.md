@@ -122,7 +122,7 @@ resource "polar_product" "pro_with_benefits" {
 
 Required:
 
-- `amount_type` (String) The price type. Must be one of: `fixed`, `free`, `custom`, `metered_unit`.
+- `amount_type` (String) The price type. Must be one of: `fixed`, `free`, `custom`, `metered_unit`, `seat_based`.
 
 Optional:
 
@@ -133,4 +133,17 @@ Optional:
 - `preset_amount` (Number) The initial amount in cents shown to the customer. For `custom` type.
 - `price_amount` (Number) The price amount in cents. Required when `amount_type` is `fixed`.
 - `price_currency` (String) The currency code (e.g. `usd`). Defaults to `usd`. Applies to `fixed`, `custom`, and `metered_unit` types.
+- `seat_tiers` (Attributes List) List of seat-based pricing tiers. Required when `amount_type` is `seat_based`. Tiers must be ordered by `min_seats` ascending with no gaps, and only the last tier may omit `max_seats`. (see [below for nested schema](#nestedatt--prices--seat_tiers))
 - `unit_amount` (String) The price per unit in cents (supports up to 12 decimal places). Required when `amount_type` is `metered_unit`.
+
+<a id="nestedatt--prices--seat_tiers"></a>
+### Nested Schema for `prices.seat_tiers`
+
+Required:
+
+- `min_seats` (Number) Minimum number of seats (inclusive) for this tier.
+- `price_per_seat` (Number) Price per seat in cents for this tier.
+
+Optional:
+
+- `max_seats` (Number) Maximum number of seats (inclusive) for this tier. Omit on the last tier for unlimited.

@@ -41,13 +41,13 @@ resource "polar_organization" "main" {
 ### Optional
 
 - `avatar_url` (String) The organization avatar URL.
-- `customer_email_settings` (Attributes) Controls which transactional emails are sent to customers. Omit to leave customer email settings unmanaged. (see [below for nested schema](#nestedatt--customer_email_settings))
+- `customer_email_settings` (Attributes) Controls which transactional emails are sent to customers. Omit to leave customer email settings unmanaged. Only specified fields are updated; omitted fields keep their current values. (see [below for nested schema](#nestedatt--customer_email_settings))
 - `email` (String) The organization contact email.
-- `feature_settings` (Attributes) Feature flags for the organization. Omit to leave feature settings unmanaged. (see [below for nested schema](#nestedatt--feature_settings))
+- `feature_settings` (Attributes) Feature flags for the organization. Omit to leave feature settings unmanaged. Only specified fields are updated; omitted fields keep their current values. (see [below for nested schema](#nestedatt--feature_settings))
 - `name` (String) The name of the organization.
-- `notification_settings` (Attributes) Email notification preferences for the organization. Omit to leave notification settings unmanaged. (see [below for nested schema](#nestedatt--notification_settings))
+- `notification_settings` (Attributes) Email notification preferences for the organization. Omit to leave notification settings unmanaged. Only specified fields are updated; omitted fields keep their current values. (see [below for nested schema](#nestedatt--notification_settings))
 - `socials` (Attributes List) List of social links for the organization. (see [below for nested schema](#nestedatt--socials))
-- `subscription_settings` (Attributes) Subscription behavior settings. Omit to leave subscription settings unmanaged. (see [below for nested schema](#nestedatt--subscription_settings))
+- `subscription_settings` (Attributes) Subscription behavior settings. Omit to leave subscription settings unmanaged. Only specified fields are updated; omitted fields keep their current values. (see [below for nested schema](#nestedatt--subscription_settings))
 - `website` (String) The organization website URL.
 
 ### Read-Only
@@ -58,7 +58,7 @@ resource "polar_organization" "main" {
 <a id="nestedatt--customer_email_settings"></a>
 ### Nested Schema for `customer_email_settings`
 
-Required:
+Optional:
 
 - `order_confirmation` (Boolean) Whether to send order confirmation emails.
 - `subscription_cancellation` (Boolean) Whether to send subscription cancellation emails.
@@ -74,7 +74,7 @@ Required:
 <a id="nestedatt--feature_settings"></a>
 ### Nested Schema for `feature_settings`
 
-Required:
+Optional:
 
 - `issue_funding_enabled` (Boolean) Whether issue funding is enabled.
 - `revops_enabled` (Boolean) Whether RevOps features are enabled.
@@ -85,7 +85,7 @@ Required:
 <a id="nestedatt--notification_settings"></a>
 ### Nested Schema for `notification_settings`
 
-Required:
+Optional:
 
 - `new_order` (Boolean) Whether to send notifications for new orders.
 - `new_subscription` (Boolean) Whether to send notifications for new subscriptions.
@@ -103,7 +103,7 @@ Required:
 <a id="nestedatt--subscription_settings"></a>
 ### Nested Schema for `subscription_settings`
 
-Required:
+Optional:
 
 - `allow_customer_updates` (Boolean) Whether customers can self-manage their subscriptions.
 - `allow_multiple_subscriptions` (Boolean) Whether customers can hold multiple active subscriptions.
