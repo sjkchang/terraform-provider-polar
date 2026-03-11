@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.30.0
 	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/hashicorp/terraform-plugin-testing v1.14.0
-	github.com/polarsource/polar-go v0.14.0
+	github.com/polarsource/polar-go v0.15.0
 )
 
 require (
