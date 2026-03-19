@@ -6,6 +6,8 @@ description: |-
 
 # Polar Provider
 
+~> **Note:** This provider depends on the [Polar Go SDK](https://github.com/polarsource/polar-go), which is still pre-1.0 and frequently receives breaking changes to its API. As a result, this Terraform provider may also introduce breaking changes between minor versions until the underlying SDK and API stabilize.
+
 The Polar provider enables Terraform to manage [Polar.sh](https://polar.sh) resources such as organizations, products, meters, benefits, and webhook endpoints.
 
 ## Example Usage
