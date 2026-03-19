@@ -83,6 +83,10 @@ func buildOrganizationUpdate(ctx context.Context, data *OrganizationResourceMode
 			b := data.FeatureSettings.SeatBasedPricingEnabled.ValueBool()
 			fs.SeatBasedPricingEnabled = &b
 		}
+		if !data.FeatureSettings.MemberModelEnabled.IsNull() && !data.FeatureSettings.MemberModelEnabled.IsUnknown() {
+			b := data.FeatureSettings.MemberModelEnabled.ValueBool()
+			fs.MemberModelEnabled = &b
+		}
 		if !data.FeatureSettings.RevopsEnabled.IsNull() && !data.FeatureSettings.RevopsEnabled.IsUnknown() {
 			b := data.FeatureSettings.RevopsEnabled.ValueBool()
 			fs.RevopsEnabled = &b
@@ -173,6 +177,7 @@ func mapOrganizationResponseToState(ctx context.Context, org *components.Organiz
 		data.FeatureSettings = &FeatureSettingsModel{
 			IssueFundingEnabled:     types.BoolValue(derefBool(org.FeatureSettings.IssueFundingEnabled)),
 			SeatBasedPricingEnabled: types.BoolValue(derefBool(org.FeatureSettings.SeatBasedPricingEnabled)),
+			MemberModelEnabled:      types.BoolValue(derefBool(org.FeatureSettings.MemberModelEnabled)),
 			RevopsEnabled:           types.BoolValue(derefBool(org.FeatureSettings.RevopsEnabled)),
 			WalletsEnabled:          types.BoolValue(derefBool(org.FeatureSettings.WalletsEnabled)),
 		}

@@ -469,6 +469,7 @@ func testAccProductSeatBasedConfig(name string, tier1Price, tier2Price int64) st
 	return fmt.Sprintf(`
 resource "polar_organization" "test" {
   feature_settings = {
+    member_model_enabled       = true
     seat_based_pricing_enabled = true
   }
 }

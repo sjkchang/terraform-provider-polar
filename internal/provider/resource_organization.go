@@ -60,6 +60,7 @@ type SocialModel struct {
 type FeatureSettingsModel struct {
 	IssueFundingEnabled     types.Bool `tfsdk:"issue_funding_enabled"`
 	SeatBasedPricingEnabled types.Bool `tfsdk:"seat_based_pricing_enabled"`
+	MemberModelEnabled      types.Bool `tfsdk:"member_model_enabled"`
 	RevopsEnabled           types.Bool `tfsdk:"revops_enabled"`
 	WalletsEnabled          types.Bool `tfsdk:"wallets_enabled"`
 }
@@ -161,7 +162,12 @@ func (r *OrganizationResource) Schema(ctx context.Context, req resource.SchemaRe
 						Computed:            true,
 					},
 					"seat_based_pricing_enabled": schema.BoolAttribute{
-						MarkdownDescription: "Whether seat-based pricing is enabled.",
+						MarkdownDescription: "Whether seat-based pricing is enabled. Requires `member_model_enabled` to be true.",
+						Optional:            true,
+						Computed:            true,
+					},
+					"member_model_enabled": schema.BoolAttribute{
+						MarkdownDescription: "Whether the member model is enabled. Must be enabled before seat-based pricing.",
 						Optional:            true,
 						Computed:            true,
 					},

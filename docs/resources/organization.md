@@ -77,8 +77,9 @@ Optional:
 Optional:
 
 - `issue_funding_enabled` (Boolean) Whether issue funding is enabled.
+- `member_model_enabled` (Boolean) Whether the member model is enabled. Must be enabled before seat-based pricing.
 - `revops_enabled` (Boolean) Whether RevOps features are enabled.
-- `seat_based_pricing_enabled` (Boolean) Whether seat-based pricing is enabled.
+- `seat_based_pricing_enabled` (Boolean) Whether seat-based pricing is enabled. Requires `member_model_enabled` to be true.
 - `wallets_enabled` (Boolean) Whether wallets are enabled.
 
 
