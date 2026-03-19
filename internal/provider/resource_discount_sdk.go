@@ -97,10 +97,11 @@ func buildDiscountCreateRequest(ctx context.Context, data *DiscountResourceModel
 
 	switch {
 	case discountType == "fixed" && (duration == "once" || duration == "forever"):
+		amount := data.Amount.ValueInt64()
 		create := components.DiscountFixedOnceForeverDurationCreate{
 			Type:           components.DiscountType(discountType),
 			Duration:       components.DiscountDuration(duration),
-			Amount:         data.Amount.ValueInt64(),
+			Amount:         &amount,
 			Name:           name,
 			Code:           code,
 			StartsAt:       startsAt,
@@ -124,10 +125,11 @@ func buildDiscountCreateRequest(ctx context.Context, data *DiscountResourceModel
 		return &result, diags
 
 	case discountType == "fixed" && duration == "repeating":
+		amount := data.Amount.ValueInt64()
 		create := components.DiscountFixedRepeatDurationCreate{
 			Type:             components.DiscountType(discountType),
 			Duration:         components.DiscountDuration(duration),
-			Amount:           data.Amount.ValueInt64(),
+			Amount:           &amount,
 			DurationInMonths: data.DurationInMonths.ValueInt64(),
 			Name:             name,
 			Code:             code,
