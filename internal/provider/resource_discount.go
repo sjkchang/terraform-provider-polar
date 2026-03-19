@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -41,8 +40,7 @@ type DiscountResourceModel struct {
 	Name             types.String `tfsdk:"name"`
 	Type             types.String `tfsdk:"type"`
 	Duration         types.String `tfsdk:"duration"`
-	Amount           types.Int64  `tfsdk:"amount"`
-	Currency         types.String `tfsdk:"currency"`
+	Amounts          types.Map    `tfsdk:"amounts"`
 	BasisPoints      types.Int64  `tfsdk:"basis_points"`
 	DurationInMonths types.Int64  `tfsdk:"duration_in_months"`
 	Code             types.String `tfsdk:"code"`
@@ -93,24 +91,14 @@ func (r *DiscountResource) Schema(ctx context.Context, req resource.SchemaReques
 					stringvalidator.OneOf("once", "forever", "repeating"),
 				},
 			},
-			"amount": schema.Int64Attribute{
-				MarkdownDescription: "Fixed amount to discount from the invoice total (in smallest currency unit). Required when `type` is `fixed`.",
+			"amounts": schema.MapAttribute{
+				MarkdownDescription: "Map of ISO 4217 currency code to fixed discount amount (in smallest currency unit). Required when `type` is `fixed`. For example, `{\"usd\" = 1000}` discounts $10.00 USD.",
 				Optional:            true,
-				Validators: []validator.Int64{
-					int64validator.ConflictsWith(path.MatchRoot("basis_points")),
-				},
-			},
-			"currency": schema.StringAttribute{
-				MarkdownDescription: "ISO 4217 currency code. Only applicable when `type` is `fixed`. Defaults to the organization's currency.",
-				Optional:            true,
-				Computed:            true,
+				ElementType:         types.Int64Type,
 			},
 			"basis_points": schema.Int64Attribute{
 				MarkdownDescription: "Discount percentage in basis points (1/100th of a percent). For example, 2550 = 25.5%. Required when `type` is `percentage`.",
 				Optional:            true,
-				Validators: []validator.Int64{
-					int64validator.ConflictsWith(path.MatchRoot("amount")),
-				},
 			},
 			"duration_in_months": schema.Int64Attribute{
 				MarkdownDescription: "Number of months the discount applies. Required when `duration` is `repeating`. For yearly pricing, multiply by 12.",
@@ -169,12 +157,12 @@ func (r *DiscountResource) ValidateConfig(ctx context.Context, req resource.Vali
 
 	discountType := data.Type.ValueString()
 
-	// type=fixed requires amount, type=percentage requires basis_points.
-	if discountType == "fixed" && data.Amount.IsNull() {
+	// type=fixed requires amounts, type=percentage requires basis_points.
+	if discountType == "fixed" && data.Amounts.IsNull() {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("amount"),
+			path.Root("amounts"),
 			"Missing required attribute",
-			"`amount` is required when `type` is \"fixed\".",
+			"`amounts` is required when `type` is \"fixed\".",
 		)
 	}
 	if discountType == "percentage" && data.BasisPoints.IsNull() {
