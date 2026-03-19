@@ -23,10 +23,9 @@ Manages a Polar discount. Discounts can be applied to products at checkout to re
 
 ### Optional
 
-- `amount` (Number) Fixed amount to discount from the invoice total (in smallest currency unit). Required when `type` is `fixed`.
+- `amounts` (Map of Number) Map of ISO 4217 currency code to fixed discount amount (in smallest currency unit). Required when `type` is `fixed`. For example, `{"usd" = 1000}` discounts $10.00 USD.
 - `basis_points` (Number) Discount percentage in basis points (1/100th of a percent). For example, 2550 = 25.5%. Required when `type` is `percentage`.
 - `code` (String) Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters. If not provided, the discount can only be applied via the API.
-- `currency` (String) ISO 4217 currency code. Only applicable when `type` is `fixed`. Defaults to the organization's currency.
 - `duration_in_months` (Number) Number of months the discount applies. Required when `duration` is `repeating`. For yearly pricing, multiply by 12.
 - `ends_at` (String) RFC 3339 timestamp after which the discount is no longer redeemable.
 - `max_redemptions` (Number) Maximum number of times the discount can be redeemed.
