@@ -97,21 +97,22 @@ func buildDiscountCreateRequest(ctx context.Context, data *DiscountResourceModel
 
 	switch {
 	case discountType == "fixed" && (duration == "once" || duration == "forever"):
-		amount := data.Amount.ValueInt64()
+		var amounts map[string]int64
+		d := data.Amounts.ElementsAs(ctx, &amounts, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
 		create := components.DiscountFixedOnceForeverDurationCreate{
 			Type:           components.DiscountType(discountType),
 			Duration:       components.DiscountDuration(duration),
-			Amount:         &amount,
+			Amounts:        amounts,
 			Name:           name,
 			Code:           code,
 			StartsAt:       startsAt,
 			EndsAt:         endsAt,
 			MaxRedemptions: maxRedemptions,
 			Products:       products,
-		}
-		if !data.Currency.IsNull() && !data.Currency.IsUnknown() {
-			currency := components.PresentmentCurrency(data.Currency.ValueString())
-			create.Currency = &currency
 		}
 		if !data.Metadata.IsNull() && !data.Metadata.IsUnknown() {
 			m, d := metadataToCreateSDK(ctx, data.Metadata, components.CreateDiscountFixedOnceForeverDurationCreateMetadataStr)
@@ -125,11 +126,16 @@ func buildDiscountCreateRequest(ctx context.Context, data *DiscountResourceModel
 		return &result, diags
 
 	case discountType == "fixed" && duration == "repeating":
-		amount := data.Amount.ValueInt64()
+		var amounts map[string]int64
+		d := data.Amounts.ElementsAs(ctx, &amounts, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
 		create := components.DiscountFixedRepeatDurationCreate{
 			Type:             components.DiscountType(discountType),
 			Duration:         components.DiscountDuration(duration),
-			Amount:           &amount,
+			Amounts:          amounts,
 			DurationInMonths: data.DurationInMonths.ValueInt64(),
 			Name:             name,
 			Code:             code,
@@ -137,10 +143,6 @@ func buildDiscountCreateRequest(ctx context.Context, data *DiscountResourceModel
 			EndsAt:           endsAt,
 			MaxRedemptions:   maxRedemptions,
 			Products:         products,
-		}
-		if !data.Currency.IsNull() && !data.Currency.IsUnknown() {
-			currency := components.PresentmentCurrency(data.Currency.ValueString())
-			create.Currency = &currency
 		}
 		if !data.Metadata.IsNull() && !data.Metadata.IsUnknown() {
 			m, d := metadataToCreateSDK(ctx, data.Metadata, components.CreateDiscountFixedRepeatDurationCreateMetadataStr)
@@ -232,14 +234,15 @@ func buildDiscountUpdateRequest(ctx context.Context, data *DiscountResourceModel
 		return nil, diags
 	}
 
-	// Type-specific fields: amount/currency for fixed, basis_points for percentage.
-	if !data.Amount.IsNull() {
-		v := data.Amount.ValueInt64()
-		update.Amount = &v
-	}
-	if !data.Currency.IsNull() && !data.Currency.IsUnknown() {
-		currency := components.PresentmentCurrency(data.Currency.ValueString())
-		update.Currency = &currency
+	// Type-specific fields: amounts for fixed, basis_points for percentage.
+	if !data.Amounts.IsNull() {
+		var amounts map[string]int64
+		d := data.Amounts.ElementsAs(ctx, &amounts, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		update.Amounts = amounts
 	}
 	if !data.BasisPoints.IsNull() {
 		v := data.BasisPoints.ValueInt64()
@@ -282,8 +285,9 @@ func mapDiscountResponseToState(ctx context.Context, discount *components.Discou
 		data.Name = types.StringValue(d.Name)
 		data.Type = types.StringValue(string(d.Type))
 		data.Duration = types.StringValue(string(d.Duration))
-		data.Amount = types.Int64Value(d.Amount)
-		data.Currency = types.StringValue(d.Currency)
+		amounts, ad := types.MapValueFrom(ctx, types.Int64Type, d.Amounts)
+		diags.Append(ad...)
+		data.Amounts = amounts
 		data.BasisPoints = types.Int64Null()
 		data.DurationInMonths = types.Int64Null()
 		setDiscountCommonOptionals(d.Code, d.StartsAt, d.EndsAt, d.MaxRedemptions, data)
@@ -295,8 +299,9 @@ func mapDiscountResponseToState(ctx context.Context, discount *components.Discou
 		data.Name = types.StringValue(d.Name)
 		data.Type = types.StringValue(string(d.Type))
 		data.Duration = types.StringValue(string(d.Duration))
-		data.Amount = types.Int64Value(d.Amount)
-		data.Currency = types.StringValue(d.Currency)
+		amounts, ad := types.MapValueFrom(ctx, types.Int64Type, d.Amounts)
+		diags.Append(ad...)
+		data.Amounts = amounts
 		data.BasisPoints = types.Int64Null()
 		data.DurationInMonths = types.Int64Value(d.DurationInMonths)
 		setDiscountCommonOptionals(d.Code, d.StartsAt, d.EndsAt, d.MaxRedemptions, data)
@@ -308,8 +313,7 @@ func mapDiscountResponseToState(ctx context.Context, discount *components.Discou
 		data.Name = types.StringValue(d.Name)
 		data.Type = types.StringValue(string(d.Type))
 		data.Duration = types.StringValue(string(d.Duration))
-		data.Amount = types.Int64Null()
-		data.Currency = types.StringNull()
+		data.Amounts = types.MapNull(types.Int64Type)
 		data.BasisPoints = types.Int64Value(d.BasisPoints)
 		data.DurationInMonths = types.Int64Null()
 		setDiscountCommonOptionals(d.Code, d.StartsAt, d.EndsAt, d.MaxRedemptions, data)
@@ -321,8 +325,7 @@ func mapDiscountResponseToState(ctx context.Context, discount *components.Discou
 		data.Name = types.StringValue(d.Name)
 		data.Type = types.StringValue(string(d.Type))
 		data.Duration = types.StringValue(string(d.Duration))
-		data.Amount = types.Int64Null()
-		data.Currency = types.StringNull()
+		data.Amounts = types.MapNull(types.Int64Type)
 		data.BasisPoints = types.Int64Value(d.BasisPoints)
 		data.DurationInMonths = types.Int64Value(d.DurationInMonths)
 		setDiscountCommonOptionals(d.Code, d.StartsAt, d.EndsAt, d.MaxRedemptions, data)

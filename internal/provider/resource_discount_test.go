@@ -99,8 +99,10 @@ func TestAccDiscountResource_fixed(t *testing.T) {
 					),
 					statecheck.ExpectKnownValue(
 						"polar_discount.test",
-						tfjsonpath.New("amount"),
-						knownvalue.Int64Exact(1000),
+						tfjsonpath.New("amounts"),
+						knownvalue.MapExact(map[string]knownvalue.Check{
+							"usd": knownvalue.Int64Exact(1000),
+						}),
 					),
 				},
 			},
@@ -110,7 +112,7 @@ func TestAccDiscountResource_fixed(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			// Update name
+			// Update name and amount
 			{
 				Config: testAccDiscountFixedConfig(rName+"-upd", 2000, "forever"),
 				ConfigStateChecks: []statecheck.StateCheck{
@@ -118,6 +120,13 @@ func TestAccDiscountResource_fixed(t *testing.T) {
 						"polar_discount.test",
 						tfjsonpath.New("name"),
 						knownvalue.StringExact(rName+"-upd"),
+					),
+					statecheck.ExpectKnownValue(
+						"polar_discount.test",
+						tfjsonpath.New("amounts"),
+						knownvalue.MapExact(map[string]knownvalue.Check{
+							"usd": knownvalue.Int64Exact(2000),
+						}),
 					),
 				},
 			},
@@ -129,7 +138,7 @@ func TestDiscountResource_validation(t *testing.T) {
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
-			// type=fixed without amount
+			// type=fixed without amounts
 			{
 				Config: `
 resource "polar_discount" "test" {
@@ -138,7 +147,7 @@ resource "polar_discount" "test" {
   duration = "once"
 }
 `,
-				ExpectError: regexp.MustCompile(`amount.*is required when.*type.*is "fixed"`),
+				ExpectError: regexp.MustCompile(`amounts.*is required when.*type.*is "fixed"`),
 			},
 			// type=percentage without basis_points
 			{
@@ -186,7 +195,9 @@ resource "polar_discount" "test" {
   name     = %q
   type     = "fixed"
   duration = %q
-  amount   = %d
+  amounts  = {
+    usd = %d
+  }
 }
 `, name, duration, amount)
 }
