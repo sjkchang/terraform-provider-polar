@@ -18,7 +18,7 @@ terraform {
   required_providers {
     polar = {
       source  = "sjkchang/polar"
-      version = "~> 0.1"
+      version = "~> 0.2"
     }
   }
 }
